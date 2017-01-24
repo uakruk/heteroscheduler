@@ -1,5 +1,6 @@
 package ua.kpi.io31.kruk.model;
 
+import java.util.Comparator;
 import java.util.Set;
 
 /**
@@ -14,6 +15,19 @@ public class ClockEngine {
     private static int tick = 0;
 
     public Processor getNextEvent(Set<Processor> processors) {
+        return processors.stream()
+                .min(Comparator.comparingInt(processor -> processor.getCurrentTask().getEnd())).get();
+    }
 
+    public void next(Set<Processor> processors) {
+
+    }
+
+    public static void nextTick(Set<Processor> processors, Bus bus) {
+        bus.taskQueue.peek();
+    }
+
+    public static int getTick() {
+        return tick;
     }
 }

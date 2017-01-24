@@ -30,6 +30,8 @@ public class Task {
 
     private int end;
 
+    private Processor processor;
+
     /**
      * a map of dependent tasks and weight of data to send them to
      */
@@ -37,7 +39,7 @@ public class Task {
 
     public Task(int weight) {
         this.weight = weight;
-        name = "task-" + id + "/" + weight;
+        name = "task-" + id + "(" + weight + ")";
     }
 
     int getTaskLayer() {
@@ -49,7 +51,7 @@ public class Task {
                 int res1 = t1.getTaskLayer();
                 int res2 = t2.getTaskLayer();
 
-                return res1 > res2 ? 1 : res1 == res2 ? 0 : -1;
+                return res1 - res2;
             }).get().getTaskLayer();
         }
 
@@ -64,7 +66,7 @@ public class Task {
                 int res1 = t1.getTaskLayer();
                 int res2 = t2.getTaskLayer();
 
-                return res1 > res2 ? 1 : res1 == res2 ? 0 : -1;
+                return res1 - res2;
             }).get().getTaskLayer();
         }
         return layer;
@@ -111,10 +113,10 @@ public class Task {
     }
 
     public boolean isReady() {
-        if (parents.isEmpty()) {
+        if (parents.isEmpty() && !isDone()) {
             return true;
         }
-        return parents.stream().allMatch(Task::isReady);
+        return parents.stream().allMatch(Task::isDone) && !isDone();
     }
 
     public void setReady(boolean ready) {
@@ -143,5 +145,22 @@ public class Task {
 
     public void setEnd(int end) {
         this.end = end;
+    }
+
+    public Processor getProcessor() {
+        return processor;
+    }
+
+    public void setProcessor(Processor processor) {
+        this.processor = processor;
+    }
+
+    @Override
+    public String toString() {
+        return "Task{" +
+                "name='" + name + '\'' +
+                ", start=" + start +
+                ", end=" + end +
+                '}';
     }
 }

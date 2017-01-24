@@ -4,6 +4,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static java.lang.Math.*;
+
 /**
  * @author Yaroslav Kruk on 1/12/17.
  *         e-mail: yakruck@gmail.com
@@ -23,27 +25,29 @@ public class TaskScheduler {
 
     private Map<Integer, Task> tasks;
 
+    public Map<Task, Integer> tLevels = new HashMap<>();
+
     private final int[][] connectionMatrix = {
      //      0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-            {0, 3, 2, 3, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//0
-            {0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 0, 0, 0, 0, 0, 0},//1
+            {0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//0
+            {0, 0, 0, 0, 0, 3, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0},//1
             {0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0},//2
-            {0, 0, 0, 0, 0, 3, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0},//3
-            {0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0},//4
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0},//5
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0},//6
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0},//7
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0},//8
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0},//9
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0},//10
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0},//11
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0},//12
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3},//13
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},//14
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0},//3
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0},//4
+            {0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0, 0, 0},//5
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 3, 0, 0, 0, 0},//6
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0},//7
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},//8
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0},//9
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},//10
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 0},//11
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4},//12
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4},//13
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},//14
             {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} //15
     };
 
-    private int[] taskWeights = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+    private int[] taskWeights = { 7, 5, 2, 4, 9, 6, 7, 8, 3, 4, 1, 2, 5, 6, 3, 9 };
 
     /**
      *
@@ -111,7 +115,6 @@ public class TaskScheduler {
 
     Map<Task, Integer> tLevel(Collection<Task> tasks) {
 
-        Map<Task, Integer> response = new HashMap<>();
         List<Task> taskList = new LinkedList<>(tasks);
 
         taskList.sort(Comparator.comparingInt(Task::getId));
@@ -120,18 +123,21 @@ public class TaskScheduler {
         taskList.stream().forEachOrdered(task -> {
             int max = 0;
             for(Task parent : task.getParents()) {
-                int sum = response.get(parent) + parent.getWeight() + parent.getChildren().get(task);
+                int sum = (parent.isDone() ? parent.getStart() : tLevels.get(parent))
+                        + parent.getWeight()
+                        + parent.getChildren().get(task) /* + Arrays.stream(connectionMatrix[parent.getId()]).sum()*/; // plus edge weight
                 if (sum > max) {
                     max = sum;
                 }
             }
-            response.put(task, max);
+            tLevels.put(task, max);
         });
 
-        return response;
+        return tLevels;
     }
 
-    Map<Task, Integer> bLevel(Collection<Task> tasks) {
+    Map<Task, Integer> bLevel(Collection<Task> tasks, Set<Processor> processors) {
+
         Map<Task, Integer> response = new HashMap<>();
         List<Task> taskList = new LinkedList<>(tasks);
 
@@ -145,35 +151,73 @@ public class TaskScheduler {
                     max = sum;
                 }
             }
-            response.put(task, max + task.getWeight());
+            response.put(task, max + (int) processors.stream()
+                    .mapToInt(p -> p.getSpeed() * task.getWeight())
+                    .average().getAsDouble());
         });
 
         return response;
     }
 
     int bLevelOnProcessor(Task task, Processor processor, Map<Task, Integer> staticBLevels) {
-        return (staticBLevels.get(task) + task.getWeight() * (processor.getSpeed() - 1)); // getBlevel on a processor
+        return (staticBLevels.get(task) + deltaTaskProcessor(task, processor, staticBLevels.get(task))); // getBlevel on a processor
     }
 
-    int startTimeOnProcessor(Task task, Processor processor, Map<Task, Integer> tLevels) {
-        Map<Task, Integer> children = processor.getCurrentTask().getChildren();
-        int oldValue = 0;
+    int startTimeOnProcessor(Task task, Processor processor, Bus bus, Map<Task, Integer> tLevels) {
+        //Map<Task, Integer> children = processor.getCurrentTask().getChildren();
+        Set<Task> parents = task.getParents();
 
-        if (children.containsKey(task)) {
-            return tLevels.get(task) - children.get(task);
-           // oldValue = children.replace(task, 0);
+        int busStartTime = bus.getFreeTime();
+        int summaryTime = 0;
+
+
+        List<Task> sortedParents = parents.stream().sorted(Comparator.comparingInt(Task::getEnd)).collect(Collectors.toList());
+        // get the earliest time of parent's execution finish
+        int earliestFinishOfParent =  parents.isEmpty() ? 0 : parents.stream().min(Comparator.comparingInt(Task::getEnd)).get().getEnd();
+        //
+        summaryTime += max(busStartTime, max(earliestFinishOfParent, processor.getCurrentTask() != null ? processor.getCurrentTask().getEnd() : 0));
+
+        Processor previous = null;
+        for (Task parent: sortedParents) {
+            if (parent.getProcessor() != processor) {
+                // calculate time for transmission
+
+                if (previous == null) {
+                    summaryTime += parent.getProcessor().hasMarker() ? 0 : Bus.MARKER_COST;
+                } else {
+                    summaryTime += (previous == parent.getProcessor()) ? 0 : Bus.MARKER_COST;
+                }
+                previous = parent.getProcessor();
+                if (parent.getEnd() > summaryTime) {
+                    summaryTime = parent.getEnd();
+                }
+                summaryTime += parent.getChildren().get(task);// + (processor.hasMarker() ? 0 : Bus.MARKER_COST);
+            }
         }
-        return tLevels.get(task) - oldValue;
+
+        return summaryTime;
     }
 
-    public Map<Processor, Queue<Task>> schedule(Set<Processor> processors, Set<Task> tasks) {
+    int executeTimeOnProcessor(Task task, Processor processor) {
+        return task.getWeight() * processor.getSpeed();
+    }
+
+    int deltaTaskProcessor(Task task, Processor processor, int staticBLevel) {
+        return staticBLevel - executeTimeOnProcessor(task, processor);
+    }
+
+    void updateReadyPool(Set<Task> readyPool, Collection<Task> allTasks) {
+        readyPool.addAll(allTasks.stream().filter(Task::isReady).collect(Collectors.toSet()));
+    }
+
+    public Map<Processor, Queue<Task>> schedule(Set<Processor> processors, Bus bus, Set<Task> tasks) {
         Map<Integer, Task> graph = initializeTasks(this.connectionMatrix);
         Map<Processor, Queue<Task>> response = new HashMap<>();
 
         processors.forEach(processor -> response.put(processor, new LinkedList<>()));
 
         // 1. Calculate the b-level of each node.
-        Map<Task, Integer> bLevels = bLevel(graph.values());
+        Map<Task, Integer> bLevels = bLevel(graph.values(), processors);
 
         // 2. Initialize the ready node pool.
         Set<Task> readyPool = graph.values().stream().filter(Task::isReady).collect(Collectors.toSet());
@@ -185,14 +229,16 @@ public class TaskScheduler {
 
             // Find the most early task for each processor
             processors.forEach(processor -> {
+
                 Map<Task, Integer> earliestStartTimes = new HashMap<>();
 
-                readyPool.stream().map(task -> earliestStartTimes.put(task, startTimeOnProcessor(task, processor, tLevels)));
+                // for each ready for execution task compute the earliest start time
+                readyPool.forEach(task -> {
+                    earliestStartTimes.put(task, startTimeOnProcessor(task, processor, bus, tLevels));
+                });
                 earlyTasks.put(processor, earliestStartTimes);
             });
 
-            int earliestStartTime = Integer.MAX_VALUE;
-            Task earliestTask = null;
 
             Map<Processor, Map<Task, Integer>> DLpairs = new HashMap<>();
 
@@ -203,9 +249,9 @@ public class TaskScheduler {
 
                 // put current processor to the map
                 DLpairs.put(processor, DLpair);
-
                 // calculate the dl for each node on this processor
-                currentTasksOnProcessor.entrySet().stream().map(entry -> {
+                currentTasksOnProcessor.entrySet().forEach(entry -> {
+
                     int earlyTime = entry.getValue();
                     Task task = entry.getKey();
 
@@ -213,22 +259,25 @@ public class TaskScheduler {
                     int bLevelOfTask = bLevelOnProcessor(task, processor, bLevels);
 
                     // get the DL for the pair
-                    DLpair.put(task, bLevelOfTask - earlyTime);
+                    DLpair.put(task, bLevelOfTask - max(earlyTime, processor.getFreeTime()));
 
-                    return entry;
                 });
             });
 
             // get the maximum dlvalues for each processor
             Map<Processor, Map.Entry<Task, Integer>> maxDlValues = new HashMap<>();
 
+
             DLpairs.forEach((processor, dlPairMap) -> {
                 Map.Entry<Task, Integer> maxPair = dlPairMap.entrySet()
                         .stream()
                         .max(Comparator.comparingInt(Map.Entry::getValue)).get();
-
+                if (maxPair.getKey().getId() > 12) {
+                    System.out.println(processor + "\t" + maxPair + "\t" + startTimeOnProcessor(maxPair.getKey(), processor, bus, tLevels));
+                }
                 maxDlValues.put(processor, maxPair);
             });
+
 
             // Find the best sequence of processor - task
             Map.Entry<Processor, Map.Entry<Task, Integer>> bestEntry =
@@ -239,34 +288,46 @@ public class TaskScheduler {
             // schedule and execute this entry on the processor
             Processor executor = bestEntry.getKey();
             Task task = bestEntry.getValue().getKey();
+            int time = startTimeOnProcessor(task, executor, bus, tLevels);
+            time += task.getParents().isEmpty() ? 0 : 1;
+
+            tLevels.replace(task, time);
+            task.setStart(time);
 
             response.get(executor).offer(task);
             readyPool.remove(task);
 
+            executor.executeTask(task);
 
+            updateReadyPool(readyPool, graph.values());
 
         } while (!graph.values().stream().allMatch(Task::isDone));
 
+        return response;
     }
 
-    Map<Task, Integer> alap(Collection<Task> tasks) {
-        Map<Task, Integer> response = new HashMap<>();
-        List<Task> taskList = new LinkedList<>(tasks);
+    public static void main(String[] args) {
+        TaskScheduler scheduler = new TaskScheduler();
+        Set<Processor> processors = new HashSet<>();
+        Bus bus = new Bus();
 
-        taskList.sort(Comparator.comparingInt(Task::getId).reversed());
+        Processor p1 = new Processor(1, bus);
+        p1.setMarker(Marker.MARKER);
+        processors.add(p1);
 
-        taskList.stream().forEachOrdered(task -> {
-            int min_ft = bLevel(tasks).get(task);
-            for (Task child : task.getChildren().keySet()) {
-                int diff = response.get(child) - task.getChildren().get(child);
-                if ( diff < min_ft) {
-                    min_ft = diff;
-                }
+        for (int i = 0; i < 3; i++) {
+            processors.add(new Processor((i % 2 == 0 ? 2 : 1), bus));
+        }
+
+        Map<Processor, Queue<Task>> result = scheduler.schedule(processors, bus, null);
+
+        for (Map.Entry<Processor, Queue<Task>> entry : result.entrySet()) {
+            System.out.println(entry.getKey() + ":");
+            for (Task task : entry.getValue()) {
+                System.out.println(task);
             }
-            response.put(task, min_ft - task.getWeight());
-        });
-
-        return response;
+        }
+        System.out.println(bus);
     }
 
 }

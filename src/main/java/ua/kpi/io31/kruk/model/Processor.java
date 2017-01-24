@@ -1,6 +1,10 @@
 package ua.kpi.io31.kruk.model;
 
+import java.util.Comparator;
 import java.util.Queue;
+import java.util.stream.Collectors;
+
+import static java.lang.Math.*;
 
 /**
  * @author Yaroslav Kruk on 1/12/17.
@@ -12,6 +16,10 @@ import java.util.Queue;
 public class Processor {
 
     static TaskScheduler scheduler = TaskScheduler.getInstance();
+
+    static ClockEngine clock = new ClockEngine();
+
+    static Bus bus = new Bus();
 
     private static long counter = 0;
 
@@ -27,8 +35,9 @@ public class Processor {
 
     private Queue<Task> taskQueue;
 
-    public Processor(int speed) {
+    public Processor(int speed, Bus bus1) {
         this.speed = speed;
+        bus = bus1;
         name = "P" + id + "-" + speed;
     }
 
@@ -39,6 +48,26 @@ public class Processor {
 
     public void executeTask(Task task) {
         this.currentTask = task;
+        task.setEnd(task.getStart() + task.getWeight() * speed - 1);
+        task.setDone(true); // todo CHECK IT
+        task.setProcessor(this);
+
+        for (Task parent : task.getParents().stream().sorted(Comparator.comparingInt(Task::getEnd)).collect(Collectors.toList())) {
+            if (parent.getProcessor() != this)
+                bus.scheduleBus(parent, task);
+        }
+    }
+
+    public boolean isBusy() {
+        return currentTask != null || !currentTask.isDone();
+    }
+
+    public boolean needMarker() {
+        return currentTask != null && currentTask.isDone();
+    }
+
+    public boolean hasMarker() {
+        return marker != null;
     }
 
     public long getId() {
@@ -75,5 +104,16 @@ public class Processor {
 
     public void setCurrentTask(Task currentTask) {
         this.currentTask = currentTask;
+    }
+
+    public int getFreeTime() {
+        return currentTask == null ? 0 : currentTask.getEnd();
+    }
+
+    @Override
+    public String toString() {
+        return "Processor{" +
+                "name='" + name + '\'' +
+                '}';
     }
 }
